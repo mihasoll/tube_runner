@@ -8,11 +8,10 @@ import sys
 SCREEN_HEIGHT = 400 # fixme: Поменять на 720
 SCREEN_WIDTH = 1280
 MOVESPACE = np.pi*SCREEN_HEIGHT
-FPS = 60
-GRID_SPEED = 5
+FPS = 120
+GRID_SPEED = 2
 PLAYER_SPEED = 10
-VOID_RADIUS = 0 # полость внутренняя 
-
+VOID_RADIUS = 100
 
 # Цвета 
 BLACK = (0,0,0)
@@ -27,8 +26,6 @@ def cty(y):
     return SCREEN_HEIGHT-y
 def cty_back(y):
     return SCREEN_HEIGHT-y
-def polar(xc,yc):
-    return (VOID_RADIUS+SCREEN_HEIGHT-yc,xc*2*np.pi/MOVESPACE)
 def out(xc,yc): # Характеристики для вывода картинки
     r=(VOID_RADIUS+SCREEN_HEIGHT-yc)/2
     phi=xc*2*np.pi/MOVESPACE
@@ -44,7 +41,7 @@ class Player:
         self.y = y 
         self.color = PURPLE 
     def draw(self):
-        pg.draw.circle(screen,self.color,[self.x,self.y],self.r)
+        #pg.draw.circle(screen,self.color,[self.x,self.y],self.r)
         outc = out(ctx(self.x),cty(self.y))
         pg.draw.circle(screen,self.color,[outc[0],outc[1]],self.r)
     def move_left(self):
@@ -59,19 +56,42 @@ class Player:
         if self.x>MOVESPACE/2: 
             self.x = -MOVESPACE + self.x
         self.x=ctx_back(self.x)
-        print(out(ctx(self.x),cty(self.y)))
+
 class Test:
     def __init__(self):
-        self.rows_number = 6
+        self.rows_number = 0
+        self.circles_number = 7
         self.rows_crds = [i*SCREEN_HEIGHT/self.rows_number for i in range(0,self.rows_number)]
+        self.circles_rds = [i*SCREEN_HEIGHT*2/self.circles_number for i in range(1,self.circles_number)]
+
+    def colorfunc(self, min, current):
+        return(255*current/min/7)
+    
+    def circles_draw(self):
+        rds = self.circles_rds
+
+        for i in range(0,len(rds)):
+            c = self.colorfunc(SCREEN_HEIGHT*2/self.circles_number, rds[i])
+            pg.draw.circle(screen,(c,c,c),[ctx_back(0),cty_back(0)-SCREEN_HEIGHT/2],self.circles_rds[i], int(0.01*self.circles_rds[i]))
+        
+    def circles_move(self):
+        rds = self.circles_rds
+        for i in range(0,len(rds)):
+            self.circles_rds[i]+=GRID_SPEED
+            if self.circles_rds[i]>SCREEN_HEIGHT*2: self.circles_rds[i]=SCREEN_HEIGHT*2/self.circles_number
 
     def boundaries(self):
-        count = 5
-        pg.draw.line(screen,WHITE,[ctx_back(-MOVESPACE/2),0],[ctx_back(-MOVESPACE/2),SCREEN_HEIGHT], 3)
-        pg.draw.line(screen,WHITE,[ctx_back(MOVESPACE/2),0],[ctx_back(+MOVESPACE/2),SCREEN_HEIGHT], 3)
-        for i in range(-count,count):
-            pg.draw.line(screen,WHITE,[ctx_back(MOVESPACE/2*i/count),0],[ctx_back(+MOVESPACE/2*i/count),SCREEN_HEIGHT], 3)
-        
+
+        def makeLines(coe,count):
+            out1 = out(-MOVESPACE*coe/count, 0)
+            out2 = out(-MOVESPACE*coe/count, 3*SCREEN_HEIGHT)
+            pg.draw.line(screen,WHITE,[out1[0],out1[1]],[out2[0],out2[1]], 2)
+            out1 = out(MOVESPACE*coe/count, 0)
+            out2 = out(MOVESPACE*coe/count, 3*SCREEN_HEIGHT)
+            pg.draw.line(screen,WHITE,[out1[0],out1[1]],[out2[0],out2[1]], 2)
+
+        [makeLines(i,10) for i in range(0,12)] 
+
     def rows_move(self):
         crds = self.rows_crds
         for i in range(0,len(crds)):
@@ -95,27 +115,17 @@ pg.display.update()
 
 left_pressed, right_pressed = False, False 
 
-pygame = pg
-def gradientRect( window, left_colour, right_colour, target_rect ):
-    """ Draw a horizontal-gradient filled rectangle covering <target_rect> """
-    colour_rect = pygame.Surface( ( 2, 2 ) )                                   # tiny! 2x2 bitmap
-    pygame.draw.line( colour_rect, left_colour,  ( 0,0 ), ( 0,1 ) )            # left colour line
-    pygame.draw.line( colour_rect, right_colour, ( 1,0 ), ( 1,1 ) )            # right colour line
-    colour_rect = pygame.transform.smoothscale( colour_rect, ( target_rect.width, target_rect.height ) )  # stretch!
-    window.blit( colour_rect, target_rect )   
-
 while True:
     screen.fill(BLACK)
 
     test.boundaries()
     test.rows_move()
     test.rows_draw()
+    test.circles_move()
+    test.circles_draw()
 
     player.draw()
 
-    gradientRect( screen, (0, 255, 0), (0, 100, 0), pygame.Rect( 100,100, 100, 50 ) )
-    gradientRect( screen, (255, 255, 0), (0, 0, 255), pygame.Rect( 100,200, 128, 64 ) )
-    
     for event in pg.event.get():
         if event.type == pg.KEYDOWN and event.key == pg.K_a:
             left_pressed = True
