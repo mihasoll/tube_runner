@@ -21,6 +21,7 @@ EYE_DISTANCE = 150
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 PURPLE = (181, 100, 227)
+RED = (255,0,0)
 
 
 def ctx(x):
@@ -38,7 +39,47 @@ def cty(y):
 def cty_back(y):
     return (SCREEN_HEIGHT - FREESPACE - PLAYER_R)-y
 
+class Enemy:
+    def __init__(self, trajectory='parabola', props=[], color=RED):
+        self.move_direction = 0
+        self.r = PLAYER_R/2 
+        self.color = color
+        self.timer = 0
+        self.died = False
 
+        if trajectory == 'parabola':
+            self.xs = props[0]
+            self.ys = props[1]
+            self.xm = props[2]
+            self.ym = props[3]
+            self.boost = props[4]
+        
+    def draw(self):
+        pg.draw.circle(screen, self.color, [self.x, self.y], self.r)
+            
+    def move(self):
+        # Вычисление траектории происходит здесь
+
+        # Все координаты центральные!
+        # Начало
+        xs = self.xs 
+        ys = self.ys
+        # Максимум 
+        xm = self.xm
+        ym = self.ym
+        print(np.random.randint(-MOVESPACE/2,-MOVESPACE/2+MOVESPACE*0.1))
+        c = ym 
+        p = (ym-ys)/(xm-xs)**2
+        x = self.timer+xs
+        self.x = ctx_back(x)  
+        self.y = cty_back(-p*(x-xm)**2+ym)
+
+        if cty(self.y)<ys: 
+            self.died=True
+            print('умер')
+        
+        self.timer+=self.boost
+    
 class Player:
     def __init__(self, x=ctx_back(0), y=cty_back(0)):
         self.move_direction = 0
@@ -121,6 +162,8 @@ def gradientrect(window, left_colour, right_colour, target_rect):
     colour_rect = pygame.transform.smoothscale(colour_rect, (target_rect.width, target_rect.height))  # stretch!
     window.blit(colour_rect, target_rect)
 
+e1 = Enemy('parabola', [-500,-200,-100,SCREEN_HEIGHT/2,5])
+e2 = Enemy('parabola', [-600,-300,-100,SCREEN_HEIGHT/2,10])
 
 while True:
     screen.fill(BLACK)
@@ -130,6 +173,12 @@ while True:
     test.rows_draw()
 
     player.draw()
+
+    e1.move()
+    e1.draw()
+
+    e2.move()
+    e2.draw()
 
     gradientrect(screen, (0, 255, 0), (0, 100, 0), pygame.Rect(100, 100, 100, 50))
     gradientrect(screen, (255, 255, 0), (0, 0, 255), pygame.Rect(100, 200, 128, 64))
