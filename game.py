@@ -14,6 +14,7 @@ PLAYER_SPEED = 10
 PLAYER_R = 30
 FREESPACE = 10
 SCREEN_HEIGHT = (DEPTH + PLAYER_R + FREESPACE)
+EYE_DISTANCE = 150
 
 
 # Цвета 
@@ -98,7 +99,7 @@ class Test:
 
 
 pg.init()
-screen = pg.display.set_mode([SCREEN_WIDTH, SCREEN_HEIGHT])
+screen = pg.display.set_mode([SCREEN_WIDTH, SCREEN_HEIGHT + EYE_DISTANCE])
 clock = pg.time.Clock()
 
 
