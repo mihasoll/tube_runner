@@ -2,13 +2,13 @@ import pygame as pg
 import numpy as np
 import sys
 
-DEPTH = 700
+DEPTH = 800
 MOVE_SPACE = np.pi * DEPTH
 FREE_SPACE = 10
 PLAYER_R = 30
 
 FPS = 60
-GRID_SPEED = -4
+GRID_SPEED = -6
 PLAYER_SPEED = 10
 
 SCREEN_WIDTH = 1280
@@ -42,6 +42,17 @@ def cty_back(y):
     return (SCREEN_HEIGHT - FREE_SPACE - PLAYER_R) - y
 
 
+def image_to_screen(img, x, y, r):
+    outc = out(x, y)
+    #pg.draw.circle(screen, WHITE, [outc[0], outc[1]], r)
+    r = (EYE_DISTANCE * SCREEN_HEIGHT / 2 *
+         (1 / (EYE_DISTANCE + SCREEN_DISTANCE + y) - 1 / (EYE_DISTANCE + SCREEN_DISTANCE + y + r)))
+    scaled_img = pg.transform.scale(img, (r * 2, r * 2))
+    r = r * (abs(np.cos(outc[3])) + abs(np.sin(outc[3])))
+    rotated_img = pg.transform.rotate(scaled_img, 360 * outc[3] / 2 / np.pi)
+    screen.blit(rotated_img, (outc[0] - r, outc[1] - r))
+
+
 class Player:
     def __init__(self, x=ctx_back(0), y=cty_back(0)):
         self.move_direction = 0
@@ -51,8 +62,10 @@ class Player:
         self.color = PURPLE
 
     def draw(self):
-        outc = out(ctx(self.x), cty(self.y))
-        pg.draw.circle(screen, self.color, [outc[0], outc[1]], self.r)
+        image_to_screen(img_player, ctx(self.x), ctx(self.y), self.r)
+        #image_to_screen(img_player, ctx(self.x), ctx(self.y), self.r)
+
+
 
     def move_left(self):
         self.x -= PLAYER_SPEED
@@ -117,6 +130,8 @@ PURPLE = (181, 100, 227)
 pg.init()
 screen = pg.display.set_mode([SCREEN_WIDTH, SCREEN_HEIGHT])
 clock = pg.time.Clock()
+
+img_player = pg.image.load("icons\\tetsplayer.png")
 
 test = Test()
 player = Player()
