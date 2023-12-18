@@ -44,7 +44,7 @@ def cty_back(y):
 
 def image_to_screen(img, x, y, r):
     outc = out(x, y)
-    #pg.draw.circle(screen, WHITE, [outc[0], outc[1]], r)
+    pg.draw.circle(screen, WHITE, [outc[0], outc[1]], r)
     r = (EYE_DISTANCE * SCREEN_HEIGHT / 2 *
          (1 / (EYE_DISTANCE + SCREEN_DISTANCE + y) - 1 / (EYE_DISTANCE + SCREEN_DISTANCE + y + r)))
     scaled_img = pg.transform.scale(img, (r * 2, r * 2))
