@@ -4,35 +4,24 @@ import sys
 import random
 
 
-DEPTH = 1200
-MOVE_SPACE = 1000
+DEPTH = 600
+MOVE_SPACE = 500
 FREE_SPACE = 10
 PLAYER_R = 30
 
 FPS = 60
-GRID_SPEED = -12
+GRID_SPEED = -6
 PLAYER_SPEED = 10
 
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 720
 
-EYE_DISTANCE = 150
+EYE_DISTANCE = 100
 SCREEN_DISTANCE = PLAYER_R + FREE_SPACE
 
 
 def out(xc, yc):  # Характеристики для вывода
     r = EYE_DISTANCE * SCREEN_HEIGHT / 2 / (EYE_DISTANCE + SCREEN_DISTANCE + yc)
-    phi = xc * 2 * np.pi / MOVE_SPACE
-    x = SCREEN_WIDTH / 2 + r * np.sin(phi)
-    y = SCREEN_HEIGHT / 2 + r * np.cos(phi)
-    return [x, y, r, phi]
-
-
-def out_stars(xc, yc):  # Характеристики для вывода
-    if (EYE_DISTANCE + SCREEN_DISTANCE + yc) != 0:
-        r = EYE_DISTANCE * SCREEN_HEIGHT * 1.5 / 2 / (EYE_DISTANCE + SCREEN_DISTANCE + yc)
-    else:
-        r = EYE_DISTANCE * SCREEN_HEIGHT * 1.5 / 2
     phi = xc * 2 * np.pi / MOVE_SPACE
     x = SCREEN_WIDTH / 2 + r * np.sin(phi)
     y = SCREEN_HEIGHT / 2 + r * np.cos(phi)
@@ -55,27 +44,78 @@ def cty_back(y):
     return (SCREEN_HEIGHT - FREE_SPACE - PLAYER_R) - y
 
 
-def image_to_screen(img, x, y, r):
+def image_to_screen(img, x, y, r, ry):
     outc = out(x, y)
     #pg.draw.circle(screen, WHITE, [outc[0], outc[1]], r)
     r = (EYE_DISTANCE * SCREEN_HEIGHT / 2 *
          (1 / (EYE_DISTANCE + SCREEN_DISTANCE + y) - 1 / (EYE_DISTANCE + SCREEN_DISTANCE + y + r)))
-    scaled_img = pg.transform.scale(img, (r * 2, r * 2))
+    ry = (EYE_DISTANCE * SCREEN_HEIGHT / 2 *
+         (1 / (EYE_DISTANCE + SCREEN_DISTANCE + y) - 1 / (EYE_DISTANCE + SCREEN_DISTANCE + y + ry)))
+    scaled_img = pg.transform.scale(img, (r * 2, ry * 2))
     r = r * (abs(np.cos(outc[3])) + abs(np.sin(outc[3])))
+    ry = ry * (abs(np.cos(outc[3])) + abs(np.sin(outc[3])))
     rotated_img = pg.transform.rotate(scaled_img, 360 * outc[3] / 2 / np.pi)
-    screen.blit(rotated_img, (outc[0] - r, outc[1] - r))
+    screen.blit(rotated_img, (outc[0] - r, outc[1] - ry))
 
 
-def run_menu(background, GRID_COLOR):
+def hittest(obj1, obj2):                        # object should have ctx and cty coordinats
+    if obj1.real and obj2.real:                         # some objects not hittable all the time
+        if abs(obj1.y - obj2.y) <= 10:                 # firstly height check
+            if (abs(obj1.x - obj2.x) <= (obj1.r + obj2.r) * 0.7                             # standart hit
+                    or abs(obj1.x - obj2.x) >= MOVE_SPACE - (obj1.r + obj2.r) * 0.7):        # barier hit
+                print('hit')
+                obj1.dead = True
+                obj2.dead = True
+
+
+def run_menu():
+    theme_number = 0
+    mode = 1
     left_pressed, right_pressed = False, False
-    game_type = False
-    while not game_type:
+    background = backgrounds[theme_number]
+    GRID_COLOR = background_colors[theme_number]
+    play = False
+    bullets = []
+
+    button_mode = Button_mode()
+    button_play = Button_play()
+    button_style = Button_style()
+    button_quit = Button_quit()
+
+    while not play:
         # screen.fill(BLACK)
         screen.blit(background, (0, 0))
 
         environment.radials(GRID_COLOR)
         environment.circles_move(GRID_COLOR)
         environment.circles_draw(GRID_COLOR)
+        button_mode.draw()
+        button_play.draw()
+        button_style.draw()
+        button_quit.draw()
+
+        for bullet in bullets:
+            hittest(bullet, button_mode)
+            hittest(bullet, button_play)
+            hittest(bullet, button_style)
+            hittest(bullet, button_quit)
+            if bullet.dead:
+                bullets.remove(bullet)
+            else:
+                bullet.move()
+                bullet.draw()
+        if button_mode.dead:
+            mode *= -1
+            button_mode.dead = False
+        if button_play.dead:
+            play = True
+            button_play.dead = False
+        if button_style.dead:
+            theme_number = (theme_number + 1) % len(backgrounds)
+            button_style.dead = False
+        if button_quit.dead:
+            play = True
+            mode = 0
 
         player1.draw()
 
@@ -90,6 +130,8 @@ def run_menu(background, GRID_COLOR):
                 left_pressed = False
             if event.type == pg.KEYUP and event.key == pg.K_d:
                 right_pressed = False
+            if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
+                bullets.append(Bullet(player1.x))
             if event.type == pg.QUIT:
                 pg.quit()
                 sys.exit()
@@ -101,13 +143,61 @@ def run_menu(background, GRID_COLOR):
 
         pg.display.flip()
         clock.tick(FPS)
+        print(play)
+
+    screen.blit(background, (0, 0))
+    if mode == 1:
+        run_single_player(backgrounds[theme_number], background_colors[theme_number])
+    elif mode == -1:
+        run_double_player(backgrounds[theme_number], background_colors[theme_number])
+    else:
+        pg.quit()
 
 
-def single_player(background, GRID_COLOR):
+def run_single_player(background, GRID_COLOR):
     left_pressed, right_pressed = False, False
+    ticks = 0
+    RELOAD = 30
+    bullets = []
+    obstacles = []
+    enemies = []
     while not player1.dead:
-        # screen.fill(BLACK)
         screen.blit(background, (0, 0))
+
+        ticks += 1
+
+        if ticks % RELOAD == 0:
+            bullets.append(Bullet(player1.x))
+        for bullet in bullets:
+            if bullet.dead:
+                bullets.remove(bullet)
+            else:
+                bullet.move()
+                bullet.draw()
+
+        if ticks % (2 * RELOAD) == 0:
+            obstacles.append(Obstacle(random.randint(round(-MOVE_SPACE / 2), round(MOVE_SPACE / 2))))
+        for obstacle in obstacles:
+            hittest(player1, obstacle)
+            if obstacle.dead:
+                obstacles.remove(obstacle)
+            else:
+                obstacle.move()
+                obstacle.draw()
+
+        if ticks % (2 * RELOAD) == 0:
+            enemies.append(Enemy(PLAYER_R, random.randint(round(-MOVE_SPACE / 2), round(MOVE_SPACE / 2)),
+                                 -PLAYER_R-FREE_SPACE, random.randint(round(0.25*MOVE_SPACE), round(0.6*MOVE_SPACE)),
+                                 random.randint(round(DEPTH/2), round(DEPTH*3/4)), 0.5, WHITE))
+        for enemy in enemies:
+            hittest(player1, enemy)
+            for bullet in bullets:
+                hittest(enemy, bullet)
+            if enemy.dead:
+                enemies.remove(enemy)
+            else:
+                enemy.move()
+                enemy.draw()
 
         environment.radials(GRID_COLOR)
         environment.circles_move(GRID_COLOR)
@@ -137,19 +227,63 @@ def single_player(background, GRID_COLOR):
 
         pg.display.flip()
         clock.tick(FPS)
+    player1.dead = False
+    run_menu()
 
 
 def run_double_player(background, GRID_COLOR):
-    player2 = Player(img_player)
+    player2 = Player(test_player_2)
+    RELOAD = 30
+    ticks = 0
+    bullets = []
+    obstacles = []
+    enemies =[]
     a_pressed, d_pressed = False, False
     left_pressed, right_pressed = False, False
     while (not player1.dead) or (not player2.dead):
-        # screen.fill(BLACK)
         screen.blit(background, (0, 0))
 
         environment.radials(GRID_COLOR)
         environment.circles_move(GRID_COLOR)
         environment.circles_draw(GRID_COLOR)
+
+        ticks += 1
+
+        if ticks % RELOAD == 0:
+            bullets.append(Bullet(player1.x))
+            bullets.append(Bullet(player2.x))
+        for bullet in bullets:
+            if bullet.dead:
+                bullets.remove(bullet)
+            else:
+                bullet.move()
+                bullet.draw()
+
+        if ticks % (5 * RELOAD) == 0:
+            obstacles.append(Obstacle(random.randint(round(-MOVE_SPACE / 2), round(MOVE_SPACE / 2))))
+        for obstacle in obstacles:
+            hittest(player1, obstacle)
+            hittest(player2, obstacle)
+            if obstacle.dead:
+                obstacles.remove(obstacle)
+            else:
+                obstacle.move()
+                obstacle.draw()
+
+        if ticks % (2 * RELOAD) == 0:
+            enemies.append(Enemy(PLAYER_R, random.randint(round(-MOVE_SPACE / 2), round(MOVE_SPACE / 2)),
+                                 -PLAYER_R-FREE_SPACE, random.randint(round(0.25*MOVE_SPACE), round(0.6*MOVE_SPACE)),
+                                 random.randint(round(DEPTH/2), round(DEPTH*3/4)), 0.5, WHITE))
+        for enemy in enemies:
+            hittest(player1, enemy)
+            hittest(player2, enemy)
+            for bullet in bullets:
+                hittest(enemy, bullet)
+            if enemy.dead:
+                enemies.remove(enemy)
+            else:
+                enemy.move()
+                enemy.draw()
 
         player1.draw()
         player2.draw()
@@ -192,35 +326,113 @@ def run_double_player(background, GRID_COLOR):
         pg.display.flip()
         clock.tick(FPS)
 
+    player1.dead = False
+    run_menu()
 
 class Player:
-    def __init__(self, icon,  x=ctx_back(0), y=cty_back(0)):
+    def __init__(self, icon,  x=0, y=0):
         self.move_direction = 0
+        self.icon = icon
         self.r = PLAYER_R
+        self.ry = PLAYER_R
         self.x = x
         self.y = y
         self.color = PURPLE
         self.dead = False
+        self.real = True
 
     def draw(self):
-        image_to_screen(img_player, ctx(self.x), ctx(self.y), self.r)
-        #image_to_screen(img_player, ctx(self.x), ctx(self.y), self.r)
-
-
+        if not self.dead:
+            image_to_screen(self.icon, self.x, self.y, self.r, self.ry)
 
     def move_left(self):
         self.x -= PLAYER_SPEED
-        self.x = ctx(self.x)
         if self.x < -MOVE_SPACE / 2:
             self.x = MOVE_SPACE + self.x
-        self.x = ctx_back(self.x)
 
     def move_right(self):
         self.x += PLAYER_SPEED
-        self.x = ctx(self.x)
         if self.x > MOVE_SPACE / 2:
             self.x = -MOVE_SPACE + self.x
-        self.x = ctx_back(self.x)
+
+
+class Bullet:
+    def __init__(self, x):
+        self.x = x
+        self.y = PLAYER_R
+        self.ry = 40
+        self.r = 10
+        self.speed = 10
+        self.real = True
+        self.dead = False
+        self.icon = img_player
+
+    def move(self):
+        self.y += 10
+        if self.y > DEPTH - self.ry * 2:
+            self.dead = True
+
+    def draw(self):
+        image_to_screen(self.icon, self.x, self.y, self.r, self.ry)
+
+
+class Obstacle:
+    def __init__(self, x):
+        self.r = 40
+        self.ry = 40
+        self.x = x
+        self.y = DEPTH + self.ry
+        self.real = True
+        self.dead = False
+        self.icon = img_player
+
+    def move(self):
+        self.y += GRID_SPEED
+        if self.y < - PLAYER_R - FREE_SPACE:
+            self.dead = True
+
+    def draw(self):
+        image_to_screen(self.icon, self.x, self.y, self.r, self.ry)
+
+
+class Enemy:
+    # xz, yz - начальные координаты
+    # g - собственное ускорение свободного падения
+    # vx - горизонтальная скорость движения (может быть отрицательной)
+    def __init__(self, r, xz, yz, xm, h, g, color):
+        self.r = r
+        self.ry = self.r
+        self.ry = r
+        self.x = xz
+        self.y = yz
+        self.yz = yz
+        self.vy = (2*g*(h+PLAYER_R+FREE_SPACE))**0.5
+        self.vx = xm/self.vy*g
+        self.g = g
+        self.color = color
+        self.dead = False
+        self.real = False
+        self.icon = img_obstacle
+
+    def draw(self):
+        image_to_screen(self.icon, self.x, self.y, self.r, self.ry)
+
+    def move(self):
+        self.vy -= self.g
+        self.y += self.vy
+        self.x += self.vx
+
+        if self.y >= DEPTH / 2:
+            self.real = True
+
+        if self.y< - PLAYER_R - FREE_SPACE:
+            self.dead = True
+
+        if self.x < -MOVE_SPACE / 2:
+            self.x = MOVE_SPACE + self.x
+
+        if self.x > MOVE_SPACE / 2:
+            self.x = -MOVE_SPACE + self.x
 
 
 class Environment:
@@ -256,23 +468,81 @@ class Environment:
             pg.draw.line(screen, color, [outc[0], outc[1]], [outc2[0], outc2[1]], 1)
 
 
+class Button_mode:
+    def __init__(self):
+        self.x = - MOVE_SPACE / 6
+        self.y = DEPTH / 4
+        self.icon = img_obstacle
+        self.r = MOVE_SPACE / 12 - 5
+        self.ry = PLAYER_R
+        self.real = True
+        self.dead = False
+    def draw(self):
+        image_to_screen(self.icon, self.x, self.y, self.r, self.ry)
+
+
+class Button_play:
+    def __init__(self):
+        self.x = 0
+        self.y = DEPTH / 4
+        self.icon = img_obstacle
+        self.r = MOVE_SPACE / 12 - 5
+        self.ry = PLAYER_R
+        self.real = True
+        self.dead = False
+    def draw(self):
+        image_to_screen(self.icon, self.x, self.y, self.r, self.ry)
+
+
+class Button_style:
+    def __init__(self):
+        self.x = MOVE_SPACE / 6
+        self.y = DEPTH / 4
+        self.icon = img_obstacle
+        self.r = MOVE_SPACE / 12 - 5
+        self.ry = PLAYER_R
+        self.real = True
+        self.dead = False
+
+    def draw(self):
+        image_to_screen(self.icon, self.x, self.y, self.r, self.ry)
+
+
+class Button_quit:
+    def __init__(self):
+        self.x = MOVE_SPACE / 2
+        self.y = DEPTH/ 4
+        self.icon = img_obstacle
+        self.r = MOVE_SPACE / 12 - 5
+        self.ry = PLAYER_R
+        self.real = True
+        self.dead = False
+
+    def draw(self):
+        image_to_screen(self.icon, self.x, self.y, self.r, self.ry)
+
+
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 PURPLE = (181, 100, 227)
-LIGHT_BLUE = (183, 206, 195)
+BACKGROUND_COLOR_1 = (183, 206, 195)
 
 pg.init()
 screen = pg.display.set_mode([SCREEN_WIDTH, SCREEN_HEIGHT])
 clock = pg.time.Clock()
 
 img_player = pg.image.load("icons\\tetsplayer.png")
+img_obstacle = pg.image.load("icons\\test_obstacle.png")
 background_img = pg.image.load("dark_cosmos.jpg")
+test_square = pg.image.load("icons\\test_square.png")
+test_player_2 = pg.image.load("icons\\test_player_2.png")
 background1 = pg.transform.scale(background_img, (SCREEN_WIDTH, SCREEN_HEIGHT))
 
 environment = Environment()
 player1 = Player(img_player)
-
+backgrounds = [background1]         # ADD MORE
+background_colors = [BACKGROUND_COLOR_1]
 pg.display.update()
 
-run_menu(background1, LIGHT_BLUE)
+run_menu()
 

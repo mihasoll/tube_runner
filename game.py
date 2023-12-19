@@ -50,10 +50,45 @@ def hittest(obj1, obj2):                        # object should have ctx and cty
                 obj1.dead = True
                 obj2.dead = True
 
-
 class Enemy:
+    # xz, yz - начальные координаты
+    # g - собственное ускорение свободного падения
+    # vx - горизонтальная скорость движения (может быть отрицательной)
+    def __init__(self, r, xz, yz, xm, h, g, color):
+        self.r = r
+        self.ry = r
+        self.x = xz
+        self.y = yz
+        self.yz = yz
+        self.vy = (2*g*(h+PLAYER_R+FREESPACE+EYE_DISTANCE))**0.5
+        self.vx = xm/self.vy*g
+        self.g = g
+        self.color = color
+        self.died = False
+        self.real = False
+
+    def draw(self):
+        pg.draw.circle(screen, self.color, [ctx_back(self.x), cty_back(self.y)], self.r)
+
+    def move(self):
+        self.vy -= self.g
+        self.y += self.vy
+        self.x += self.vx
+
+        if self.y >= DEPTH / 2:
+            self.real = True
+
+        if self.y<self.yz:
+            self.died = True
+
+        if self.x < -MOVESPACE / 2:
+            self.x = MOVESPACE + self.x
+
+        if self.x > MOVESPACE / 2:
+            self.x = -MOVESPACE + self.x
+
+class Enemy2:
     def __init__(self, trajectory='parabola', props=[], color=RED):
-        self.move_direction = 0
         self.r = PLAYER_R/2
         self.ry = self.r
         self.color = color
@@ -64,39 +99,42 @@ class Enemy:
         if trajectory == 'parabola':
             self.xs = props[0]
             self.ys = props[1]
+            self.x = self.xs
+            self.y = self.ys
             self.xm = props[2]
             self.ym = props[3]
-            self.boost = props[4]
-        
-    def draw(self):
-        pg.draw.circle(screen, self.color, [self.x, self.y], self.r)
-            
-    def move(self):
-        # Вычисление траектории происходит здесь
+            self.vx = props[4]
+            self.g = props[5]
 
         # Все координаты центральные!
         # Начало
-        xs = self.xs 
+        xs = self.xs
         ys = self.ys
-        # Максимум 
+        # Максимум
         xm = self.xm
         ym = self.ym
-        #print(np.random.randint(-MOVESPACE/2,-MOVESPACE/2+MOVESPACE*0.1))
-        c = ym 
-        p = (ym-ys)/(xm-xs)**2
-        x = self.timer+xs
-        self.x = ctx_back(x)  
-        self.y = cty_back(-p*(x-xm)**2+ym)
 
-        if cty(self.y) >= DEPTH / 2:
+        self.p = (ym - ys) / (xm - xs) ** 2
+        
+    def draw(self):
+        pg.draw.circle(screen, self.color, [ctx_back(self.x), cty_back(self.y)], self.r)
+            
+    def move(self):
+
+        self.x = self.x + self.vx
+        #self.y = -self.p*(self.x-self.xm)**2+self.ym
+
+        if self.x < -MOVESPACE / 2:
+            self.x = MOVESPACE + self.x
+
+        if self.x > MOVESPACE / 2:
+            self.x = -MOVESPACE + self.x
+
+        if self.y >= DEPTH / 2:
             self.real = True
 
-        if cty(self.y)<ys: 
-            self.died=True
-            #print('умер')
-        
-        self.timer += self.boost
-
+        if self.y<self.ys:
+            self.died = True
 
 class Player:
     def __init__(self, x=0, y=0):       # he lives in playzone coordinate system
@@ -210,11 +248,9 @@ left_pressed, right_pressed = False, False
 
 pygame = pg
 
-e1 = Enemy('parabola', [-500, -200, -100, SCREEN_HEIGHT/2, 5])
-e2 = Enemy('parabola', [-600, -300, -100, SCREEN_HEIGHT/2, 10])
-
-e1 = Enemy('parabola', [-500, -200, -100, SCREEN_HEIGHT / 2, 5])
-e2 = Enemy('parabola', [-600, -300, -100, SCREEN_HEIGHT / 2, 10])
+e1 = Enemy(PLAYER_R, -MOVESPACE/2, -PLAYER_R-FREESPACE-EYE_DISTANCE,
+           random.randint(round(0.25*MOVESPACE),round(0.6*MOVESPACE)),
+           random.randint(round(DEPTH/2),round(DEPTH*3/4)), 0.5, WHITE)
 
 ticks = 0
 bullets = []
@@ -223,6 +259,11 @@ obstacles = []
 while True:
     screen.fill(BLACK)
     ticks += 1
+
+    if e1.died == True:
+        e1 = Enemy(PLAYER_R, random.randint(-MOVESPACE / 2, MOVESPACE / 2) , -PLAYER_R - FREESPACE - EYE_DISTANCE,
+                   random.randint(round(-0.6 * MOVESPACE), round(0.6 * MOVESPACE)),
+                   random.randint(round(DEPTH / 2), round(DEPTH * 3 / 4)), 0.5, WHITE)
 
     if ticks % RELOAD == 0:
         bullets.append(Bullet(player.x))
@@ -242,6 +283,7 @@ while True:
         else:
             obstacle.move()
             obstacle.draw()
+    hittest(player, e1)
 
 
     test.boundaries()
