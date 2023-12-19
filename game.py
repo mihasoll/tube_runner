@@ -1,12 +1,13 @@
 import pygame as pg
 import numpy as np
 import sys
+import random
 
 
 # parameters
 DEPTH = 400
 SCREEN_WIDTH = 1280
-MOVESPACE = np.pi * DEPTH
+MOVESPACE = 1200
 FPS = 60
 GRID_SPEED = -2
 PLAYER_SPEED = 10
@@ -14,6 +15,8 @@ PLAYER_R = 30
 FREESPACE = 10
 SCREEN_HEIGHT = (DEPTH + PLAYER_R + FREESPACE)
 EYE_DISTANCE = 150
+RELOAD = 20
+
 
 # Цвета
 BLACK = (0, 0, 0)
@@ -42,7 +45,7 @@ def hittest(obj1, obj2):                        # object should have ctx and cty
     if obj1.real and obj2.real:                         # some objects not hittable all the time
         if abs(obj1.y - obj2.y) <= obj1.ry + obj2.ry:                 # firstly height check
             if (abs(obj1.x - obj2.x) <= obj1.r + obj2.r                             # standart hit
-                    or abs(obj1.x - obj2.x) >= MOVESPACE - obj1.r + obj2.r):        # barier hit
+                    or abs(obj1.x - obj2.x) >= MOVESPACE - obj1.r - obj2.r):        # barier hit
                 print('hit')
                 obj1.dead = True
                 obj2.dead = True
@@ -120,6 +123,47 @@ class Player:
             self.x = -MOVESPACE + self.x
 
 
+class Bullet:
+    def __init__(self, x):
+        self.x = x
+        self.y = PLAYER_R
+        self.ry = 20
+        self.r = 3
+        self.speed = 10
+        self.real = True
+        self.dead = False
+
+    def move(self):
+        self.y += 10
+        if self.y > DEPTH - self.ry * 2:
+            self.dead = True
+
+    def draw(self):
+        pg.draw.rect(screen, WHITE,
+                     (ctx_back(self.x - self.r), cty_back(self.y + self.ry * 2),
+                      self.r * 2, self.ry * 2))
+
+
+class Obstacle:
+    def __init__(self, x):
+        self.r = 40
+        self.ry = 40
+        self.x = x
+        self.y = DEPTH + self.ry
+        self.real = True
+        self.dead = False
+
+    def move(self):
+        self.y += GRID_SPEED
+        if self.y < - PLAYER_R - FREESPACE - EYE_DISTANCE:
+            self.dead = True
+
+    def draw(self):
+        pg.draw.rect(screen, WHITE,
+                     (ctx_back(self.x - self.r), cty_back(self.y + self.ry),
+                      self.r * 2, self.ry * 2))
+
+
 class Test:
     def __init__(self):
         self.rows_number = 6
@@ -172,8 +216,33 @@ e2 = Enemy('parabola', [-600, -300, -100, SCREEN_HEIGHT/2, 10])
 e1 = Enemy('parabola', [-500, -200, -100, SCREEN_HEIGHT / 2, 5])
 e2 = Enemy('parabola', [-600, -300, -100, SCREEN_HEIGHT / 2, 10])
 
+ticks = 0
+bullets = []
+obstacles = []
+
 while True:
     screen.fill(BLACK)
+    ticks += 1
+
+    if ticks % RELOAD == 0:
+        bullets.append(Bullet(player.x))
+    for bullet in bullets:
+        if bullet.dead:
+            bullets.remove(bullet)
+        else:
+            bullet.move()
+            bullet.draw()
+
+    if ticks % (5 * RELOAD) == 0:
+        obstacles.append(Obstacle(random.randint(round(-MOVESPACE/2), round(MOVESPACE/2))))
+    for obstacle in obstacles:
+        hittest(player, obstacle)
+        if obstacle.dead:
+            obstacles.remove(obstacle)
+        else:
+            obstacle.move()
+            obstacle.draw()
+
 
     test.boundaries()
     test.rows_move()
@@ -206,9 +275,6 @@ while True:
         player.move_left()
     if right_pressed:
         player.move_right()
-
-    hittest(player, e1)
-    #hittest(player, e2)
 
     pg.display.flip()
     clock.tick(FPS)

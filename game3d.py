@@ -10,7 +10,7 @@ FREE_SPACE = 10
 PLAYER_R = 30
 
 FPS = 60
-GRID_SPEED = -10
+GRID_SPEED = -12
 PLAYER_SPEED = 10
 
 SCREEN_WIDTH = 1280
@@ -66,13 +66,141 @@ def image_to_screen(img, x, y, r):
     screen.blit(rotated_img, (outc[0] - r, outc[1] - r))
 
 
+def run_menu(background, GRID_COLOR):
+    left_pressed, right_pressed = False, False
+    game_type = False
+    while not game_type:
+        # screen.fill(BLACK)
+        screen.blit(background, (0, 0))
+
+        environment.radials(GRID_COLOR)
+        environment.circles_move(GRID_COLOR)
+        environment.circles_draw(GRID_COLOR)
+
+        player1.draw()
+
+        for event in pg.event.get():
+            if event.type == pg.KEYDOWN and event.key == pg.K_a:
+                left_pressed = True
+                right_pressed = False
+            if event.type == pg.KEYDOWN and event.key == pg.K_d:
+                right_pressed = True
+                left_pressed = False
+            if event.type == pg.KEYUP and event.key == pg.K_a:
+                left_pressed = False
+            if event.type == pg.KEYUP and event.key == pg.K_d:
+                right_pressed = False
+            if event.type == pg.QUIT:
+                pg.quit()
+                sys.exit()
+
+        if left_pressed:
+            player1.move_left()
+        if right_pressed:
+            player1.move_right()
+
+        pg.display.flip()
+        clock.tick(FPS)
+
+
+def single_player(background, GRID_COLOR):
+    left_pressed, right_pressed = False, False
+    while not player1.dead:
+        # screen.fill(BLACK)
+        screen.blit(background, (0, 0))
+
+        environment.radials(GRID_COLOR)
+        environment.circles_move(GRID_COLOR)
+        environment.circles_draw(GRID_COLOR)
+
+        player1.draw()
+
+        for event in pg.event.get():
+            if event.type == pg.KEYDOWN and event.key == pg.K_a:
+                left_pressed = True
+                right_pressed = False
+            if event.type == pg.KEYDOWN and event.key == pg.K_d:
+                right_pressed = True
+                left_pressed = False
+            if event.type == pg.KEYUP and event.key == pg.K_a:
+                left_pressed = False
+            if event.type == pg.KEYUP and event.key == pg.K_d:
+                right_pressed = False
+            if event.type == pg.QUIT:
+                pg.quit()
+                sys.exit()
+
+        if left_pressed:
+            player1.move_left()
+        if right_pressed:
+            player1.move_right()
+
+        pg.display.flip()
+        clock.tick(FPS)
+
+
+def run_double_player(background, GRID_COLOR):
+    player2 = Player(img_player)
+    a_pressed, d_pressed = False, False
+    left_pressed, right_pressed = False, False
+    while (not player1.dead) or (not player2.dead):
+        # screen.fill(BLACK)
+        screen.blit(background, (0, 0))
+
+        environment.radials(GRID_COLOR)
+        environment.circles_move(GRID_COLOR)
+        environment.circles_draw(GRID_COLOR)
+
+        player1.draw()
+        player2.draw()
+
+        for event in pg.event.get():
+            if event.type == pg.KEYDOWN and event.key == pg.K_a:
+                a_pressed = True
+                d_pressed = False
+            if event.type == pg.KEYDOWN and event.key == pg.K_d:
+                d_pressed = True
+                a_pressed = False
+            if event.type == pg.KEYUP and event.key == pg.K_a:
+                a_pressed = False
+            if event.type == pg.KEYUP and event.key == pg.K_d:
+                d_pressed = False
+
+            if event.type == pg.KEYDOWN and event.key == pg.K_LEFT:
+                left_pressed = True
+                right_pressed = False
+            if event.type == pg.KEYDOWN and event.key == pg.K_RIGHT:
+                right_pressed = True
+                left_pressed = False
+            if event.type == pg.KEYUP and event.key == pg.K_LEFT:
+                left_pressed = False
+            if event.type == pg.KEYUP and event.key == pg.K_RIGHT:
+                right_pressed = False
+            if event.type == pg.QUIT:
+                pg.quit()
+                sys.exit()
+
+        if left_pressed:
+            player2.move_left()
+        if right_pressed:
+            player2.move_right()
+        if a_pressed:
+            player1.move_left()
+        if d_pressed:
+            player1.move_right()
+
+        pg.display.flip()
+        clock.tick(FPS)
+
+
 class Player:
-    def __init__(self, x=ctx_back(0), y=cty_back(0)):
+    def __init__(self, icon,  x=ctx_back(0), y=cty_back(0)):
         self.move_direction = 0
         self.r = PLAYER_R
         self.x = x
         self.y = y
         self.color = PURPLE
+        self.dead = False
 
     def draw(self):
         image_to_screen(img_player, ctx(self.x), ctx(self.y), self.r)
@@ -97,13 +225,6 @@ class Player:
 
 class Environment:
     def __init__(self):
-        self.stars_number = 100
-        self.star_length = - 50 * GRID_SPEED
-        self.stars_ys = [random.randint(- EYE_DISTANCE * 20, DEPTH - self.star_length) for i in range(self.stars_number)]
-        space = MOVE_SPACE/self.stars_number
-        self.stars_xs = [-MOVE_SPACE/2 + space*i + random.randint(round(-space/2), round(space/2))
-                         for i in range(self.stars_number)]
-
         self.circles_number = round((DEPTH + EYE_DISTANCE) / DEPTH * 3)
         self.rows_crds = [i * (DEPTH + EYE_DISTANCE) / self.circles_number - EYE_DISTANCE
                           for i in range(0, self.circles_number)]
@@ -111,44 +232,28 @@ class Environment:
     def colorfunc(self, min, current):
         return (255 * current / min / 10 + 100)
 
-    def circles_draw(self):
+    def circles_draw(self, color):
         #pg.draw.circle(screen, WHITE, [SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2], out(0, 0)[2], 3)
-        pg.draw.circle(screen, LIGHT_BLUE, [SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2], out(0, DEPTH)[2], 1)
         for yc in self.rows_crds:
             radius = out(0, yc)[2]
             # c = self.colorfunc(DEPTH*2/self.circles_number, rds[i])
-            pg.draw.circle(screen, LIGHT_BLUE, [SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2], radius, 1)
+            pg.draw.circle(screen, color, [SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2], radius, 1)
 
-    def circles_move(self):
+    def circles_move(self, color):
         for i in range(0, self.circles_number):
             self.rows_crds[i] += GRID_SPEED
             if self.rows_crds[i] <= - EYE_DISTANCE:
                 self.rows_crds[i] = self.rows_crds[i] + EYE_DISTANCE + DEPTH
+            else:
+                pg.draw.circle(screen, color,
+                               [SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2], out(0, DEPTH)[2], 1)
 
-    def radials(self):
+    def radials(self, color):
         count = 5
         for i in range(-count, count):
             outc = out(MOVE_SPACE / 2 * i / count, -EYE_DISTANCE)
             outc2 = out(MOVE_SPACE / 2 * i / count, DEPTH)
-            pg.draw.line(screen, LIGHT_BLUE, [outc[0], outc[1]], [outc2[0], outc2[1]], 1)
-
-    def flying_stars(self):
-        for i in range(self.stars_number):
-            outc = out_stars(self.stars_xs[i], self.stars_ys[i])
-            outc2 = out_stars(self.stars_xs[i], self.stars_ys[i] + self.star_length)
-            pg.draw.line(screen, LIGHT_BLUE, [outc[0], outc[1]], [outc2[0], outc2[1]], 1)
-            self.stars_ys[i] += 3 * GRID_SPEED
-            if self.stars_ys[i] <= - EYE_DISTANCE:
-                self.stars_ys[i] = self.stars_ys[i] + EYE_DISTANCE + DEPTH
-
-        # def makeLines(coe,count):
-        # out1 = out(-MOVE_SPACE*coe/count, 0)
-        # out2 = out(-MOVE_SPACE*coe/count, 3*DEPTH)
-        # pg.draw.line(screen,WHITE,[out1[0],out1[1]],[out2[0],out2[1]], 2)
-        # out1 = out(MOVE_SPACE*coe/count, 0)
-        # out2 = out(MOVE_SPACE*coe/count, 3*DEPTH)
-        # pg.draw.line(screen,WHITE,[out1[0],out1[1]],[out2[0],out2[1]], 2)
-        # [makeLines(i,10) for i in range(0,12)]
+            pg.draw.line(screen, color, [outc[0], outc[1]], [outc2[0], outc2[1]], 1)
 
 
 BLACK = (0, 0, 0)
@@ -162,46 +267,12 @@ clock = pg.time.Clock()
 
 img_player = pg.image.load("icons\\tetsplayer.png")
 background_img = pg.image.load("dark_cosmos.jpg")
-background = pg.transform.scale(background_img, (SCREEN_WIDTH, SCREEN_HEIGHT))
+background1 = pg.transform.scale(background_img, (SCREEN_WIDTH, SCREEN_HEIGHT))
 
 environment = Environment()
-player = Player()
+player1 = Player(img_player)
 
 pg.display.update()
 
-left_pressed, right_pressed = False, False
-
-while True:
-    #screen.fill(BLACK)
-    screen.blit(background, (0, 0))
-
-    environment.radials()
-    environment.circles_move()
-    environment.circles_draw()
-    #environment.flying_stars()
-
-    player.draw()
-
-    for event in pg.event.get():
-        if event.type == pg.KEYDOWN and event.key == pg.K_a:
-            left_pressed = True
-            right_pressed = False
-        if event.type == pg.KEYDOWN and event.key == pg.K_d:
-            right_pressed = True
-            left_pressed = False
-        if event.type == pg.KEYUP and event.key == pg.K_a:
-            left_pressed = False
-        if event.type == pg.KEYUP and event.key == pg.K_d:
-            right_pressed = False
-        if event.type == pg.QUIT:
-            pg.quit()
-            sys.exit()
-
-    if left_pressed:
-        player.move_left()
-    if right_pressed:
-        player.move_right()
-
-    pg.display.flip()
-    clock.tick(FPS)
+run_menu(background1, LIGHT_BLUE)
 
