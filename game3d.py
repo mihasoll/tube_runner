@@ -63,7 +63,6 @@ def hittest(obj1, obj2):                        # object should have ctx and cty
         if abs(obj1.y - obj2.y) <= 10:                 # firstly height check
             if (abs(obj1.x - obj2.x) <= (obj1.r + obj2.r) * 0.7                             # standart hit
                     or abs(obj1.x - obj2.x) >= MOVE_SPACE - (obj1.r + obj2.r) * 0.7):        # barier hit
-                print('hit')
                 obj1.dead = True
                 obj2.dead = True
 
@@ -112,6 +111,7 @@ def run_menu():
             button_play.dead = False
         if button_style.dead:
             theme_number = (theme_number + 1) % len(backgrounds)
+            background = backgrounds[theme_number]
             button_style.dead = False
         if button_quit.dead:
             play = True
@@ -143,13 +143,12 @@ def run_menu():
 
         pg.display.flip()
         clock.tick(FPS)
-        print(play)
 
     screen.blit(background, (0, 0))
     if mode == 1:
-        run_single_player(backgrounds[theme_number], background_colors[theme_number])
+        run_single_player(background, background_colors[theme_number])
     elif mode == -1:
-        run_double_player(backgrounds[theme_number], background_colors[theme_number])
+        run_double_player(background, background_colors[theme_number])
     else:
         pg.quit()
 
@@ -232,7 +231,7 @@ def run_single_player(background, GRID_COLOR):
 
 
 def run_double_player(background, GRID_COLOR):
-    player2 = Player(test_player_2)
+    player2 = Player(test_player2)
     RELOAD = 30
     ticks = 0
     bullets = []
@@ -250,8 +249,10 @@ def run_double_player(background, GRID_COLOR):
         ticks += 1
 
         if ticks % RELOAD == 0:
-            bullets.append(Bullet(player1.x))
-            bullets.append(Bullet(player2.x))
+            if not player1.dead:
+                bullets.append(Bullet(player1.x))
+            if not player2.dead:
+                bullets.append(Bullet(player2.x))
         for bullet in bullets:
             if bullet.dead:
                 bullets.remove(bullet)
@@ -264,6 +265,8 @@ def run_double_player(background, GRID_COLOR):
         for obstacle in obstacles:
             hittest(player1, obstacle)
             hittest(player2, obstacle)
+            for enemy in enemies:
+                hittest(obstacle, enemy)
             if obstacle.dead:
                 obstacles.remove(obstacle)
             else:
@@ -365,7 +368,7 @@ class Bullet:
         self.speed = 10
         self.real = True
         self.dead = False
-        self.icon = img_player
+        self.icon = img_bullet
 
     def move(self):
         self.y += 10
@@ -384,7 +387,7 @@ class Obstacle:
         self.y = DEPTH + self.ry
         self.real = True
         self.dead = False
-        self.icon = img_player
+        self.icon = img_asteroid
 
     def move(self):
         self.y += GRID_SPEED
@@ -412,7 +415,7 @@ class Enemy:
         self.color = color
         self.dead = False
         self.real = False
-        self.icon = img_obstacle
+        self.icon = test_player2
 
     def draw(self):
         image_to_screen(self.icon, self.x, self.y, self.r, self.ry)
@@ -472,7 +475,7 @@ class Button_mode:
     def __init__(self):
         self.x = - MOVE_SPACE / 6
         self.y = DEPTH / 4
-        self.icon = img_obstacle
+        self.icon = img_asteroid
         self.r = MOVE_SPACE / 12 - 5
         self.ry = PLAYER_R
         self.real = True
@@ -485,7 +488,7 @@ class Button_play:
     def __init__(self):
         self.x = 0
         self.y = DEPTH / 4
-        self.icon = img_obstacle
+        self.icon = img_asteroid
         self.r = MOVE_SPACE / 12 - 5
         self.ry = PLAYER_R
         self.real = True
@@ -498,7 +501,7 @@ class Button_style:
     def __init__(self):
         self.x = MOVE_SPACE / 6
         self.y = DEPTH / 4
-        self.icon = img_obstacle
+        self.icon = img_asteroid
         self.r = MOVE_SPACE / 12 - 5
         self.ry = PLAYER_R
         self.real = True
@@ -512,7 +515,7 @@ class Button_quit:
     def __init__(self):
         self.x = MOVE_SPACE / 2
         self.y = DEPTH/ 4
-        self.icon = img_obstacle
+        self.icon = img_asteroid
         self.r = MOVE_SPACE / 12 - 5
         self.ry = PLAYER_R
         self.real = True
@@ -525,21 +528,22 @@ class Button_quit:
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 PURPLE = (181, 100, 227)
-BACKGROUND_COLOR_1 = (183, 206, 195)
 
 pg.init()
 screen = pg.display.set_mode([SCREEN_WIDTH, SCREEN_HEIGHT])
 clock = pg.time.Clock()
 
-img_player = pg.image.load("icons\\tetsplayer.png")
-img_obstacle = pg.image.load("icons\\test_obstacle.png")
-background_img = pg.image.load("dark_cosmos.jpg")
-test_square = pg.image.load("icons\\test_square.png")
-test_player_2 = pg.image.load("icons\\test_player_2.png")
-background1 = pg.transform.scale(background_img, (SCREEN_WIDTH, SCREEN_HEIGHT))
+img_player1 = pg.image.load("icons\\player_1.png")
+test_player2 = pg.image.load("icons\\test_player_2.png")
+img_bullet = pg.image.load("icons\\bullet.png")
+img_asteroid = pg.image.load("icons\\asteroid.png")
+
+background1_img = pg.image.load("backgrounds\\dark_cosmos.jpg")
+background1 = pg.transform.scale(background1_img, (SCREEN_WIDTH, SCREEN_HEIGHT))
+BACKGROUND_COLOR_1 = (183, 206, 195)
 
 environment = Environment()
-player1 = Player(img_player)
+player1 = Player(img_player1)
 backgrounds = [background1]         # ADD MORE
 background_colors = [BACKGROUND_COLOR_1]
 pg.display.update()
