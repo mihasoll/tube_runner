@@ -397,6 +397,8 @@ player1 = Player(img_player1, - PLAYER_R / 3)
 BODY_COUNT = 0
 
 environment = Environment()
+music = pg.mixer.Sound('Outdate Electro — Cradle.mp3')
+music.play(loops=-1)
 pg.display.update()
 
 n = random.randint(0, len(loading_screens) - 1)
