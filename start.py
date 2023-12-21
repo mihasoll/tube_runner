@@ -27,6 +27,7 @@ def run_menu():
         environment.radials(GRID_COLOR)
         environment.circles_move(GRID_COLOR)
         environment.circles_draw(GRID_COLOR)
+
         button_mode.draw(font.render(modes[mode + 1], True, GRID_COLOR))
         button_play.draw(font.render('PLAY', True, GRID_COLOR))
         button_style.draw(font.render('CHANGE STYLE', True, GRID_COLOR))
