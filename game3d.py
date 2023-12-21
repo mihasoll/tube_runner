@@ -368,8 +368,15 @@ def run_double_player(background, GRID_COLOR):
         clock.tick(FPS)
     run_menu()
 
+class Sprite():
+    def __init__(self):
+        self.dead = False 
 
-class Player:
+    def draw(self):
+        if not self.dead:
+            image_to_screen(self.icon, self.x, self.y, self.r, self.ry)
+
+class Player(Sprite):
     def __init__(self, icon, y, x=0):
         self.move_direction = 0
         self.icon = icon
@@ -381,10 +388,6 @@ class Player:
         self.dead = False
         self.real = True
 
-    def draw(self):
-        if not self.dead:
-            image_to_screen(self.icon, self.x, self.y, self.r, self.ry)
-
     def move_left(self):
         self.x -= PLAYER_SPEED
         if self.x < -MOVE_SPACE / 2:
@@ -395,8 +398,7 @@ class Player:
         if self.x > MOVE_SPACE / 2:
             self.x = -MOVE_SPACE + self.x
 
-
-class Bullet:
+class Bullet(Sprite):
     def __init__(self, x):
         self.x = x
         self.y = PLAYER_R
@@ -412,11 +414,7 @@ class Bullet:
         if self.y > DEPTH - self.ry * 2:
             self.dead = True
 
-    def draw(self):
-        image_to_screen(self.icon, self.x, self.y, self.r, self.ry)
-
-
-class Obstacle:
+class Obstacle(Sprite):
     def __init__(self, x):
         self.r = 50
         self.ry = 50
@@ -431,11 +429,7 @@ class Obstacle:
         if self.y < - PLAYER_R - FREE_SPACE - EYE_DISTANCE / 2:
             self.dead = True
 
-    def draw(self):
-        image_to_screen(self.icon, self.x, self.y, self.r, self.ry)
-
-
-class Enemy:
+class Enemy(Sprite):
     # xz, yz - начальные координаты
     # g - собственное ускорение свободного падения
     # vx - горизонтальная скорость движения (может быть отрицательной)
@@ -453,9 +447,6 @@ class Enemy:
         self.dead = False
         self.real = False
         self.icon = img_enemy
-
-    def draw(self):
-        image_to_screen(self.icon, self.x, self.y, self.r, self.ry)
 
     def move(self):
         self.vy -= self.g
