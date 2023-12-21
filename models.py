@@ -3,7 +3,7 @@
 from show import *
 
 
-def hittest(obj1, obj2):                        # object should have ctx and cty coordinats
+def hit_test(obj1, obj2):                        # object should have ctx and cty coordinats
     if obj1.real and obj2.real:                         # some objects not hittable all the time
         if abs(obj1.y - obj2.y) <= 10:                 # firstly height check
             if (abs(obj1.x - obj2.x) <= (obj1.r + obj2.r) * 0.7                             # standart hit

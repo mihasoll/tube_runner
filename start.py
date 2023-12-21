@@ -33,10 +33,10 @@ def run_menu():
         button_quit.draw(font.render('QUIT', True, GRID_COLOR))
 
         for bullet in bullets:
-            hittest(bullet, button_mode)
-            hittest(bullet, button_play)
-            hittest(bullet, button_style)
-            hittest(bullet, button_quit)
+            hit_test(bullet, button_mode)
+            hit_test(bullet, button_play)
+            hit_test(bullet, button_style)
+            hit_test(bullet, button_quit)
             if bullet.dead:
                 bullets.remove(bullet)
             else:
@@ -133,7 +133,7 @@ def run_single_player(background, GRID_COLOR):
         if ticks % (2 * RELOAD) == 0:
             obstacles.append(Obstacle(random.randint(round(-MOVE_SPACE / 2), round(MOVE_SPACE / 2))))
         for obstacle in obstacles:
-            hittest(player1, obstacle)
+            hit_test(player1, obstacle)
             if obstacle.dead:
                 obstacles.remove(obstacle)
             else:
@@ -142,12 +142,12 @@ def run_single_player(background, GRID_COLOR):
 
         if ticks % (2 * RELOAD) == 0:
             enemies.append(Enemy(ENEMY_R, random.randint(round(-MOVE_SPACE / 2), round(MOVE_SPACE / 2)),
-                                 -PLAYER_R-FREE_SPACE, random.randint(round(0.25*MOVE_SPACE), round(0.6*MOVE_SPACE)),
+                                 -PLAYER_R-FREE_SPACE, random.randint(round(- 0.8*MOVE_SPACE), round(0.8*MOVE_SPACE)),
                                  random.randint(round(DEPTH/2), round(DEPTH*3/4)), 0.5, WHITE))
         for enemy in enemies:
-            hittest(player1, enemy)
+            hit_test(player1, enemy)
             for bullet in bullets:
-                hittest(enemy, bullet)
+                hit_test(enemy, bullet)
             if enemy.dead:
                 enemies.remove(enemy)
             else:
@@ -229,10 +229,10 @@ def run_double_player(background, GRID_COLOR):
         if ticks % (2 * RELOAD) == 0:
             obstacles.append(Obstacle(random.randint(round(-MOVE_SPACE / 2), round(MOVE_SPACE / 2))))
         for obstacle in obstacles:
-            hittest(player1, obstacle)
-            hittest(player2, obstacle)
+            hit_test(player1, obstacle)
+            hit_test(player2, obstacle)
             for enemy in enemies:
-                hittest(obstacle, enemy)
+                hit_test(obstacle, enemy)
             if obstacle.dead:
                 obstacles.remove(obstacle)
             else:
@@ -241,13 +241,13 @@ def run_double_player(background, GRID_COLOR):
 
         if ticks % (2 * RELOAD) == 0:
             enemies.append(Enemy(ENEMY_R, random.randint(round(-MOVE_SPACE / 2), round(MOVE_SPACE / 2)),
-                                 -PLAYER_R-FREE_SPACE, random.randint(round(0.25*MOVE_SPACE), round(0.6*MOVE_SPACE)),
+                                 -PLAYER_R-FREE_SPACE, random.randint(round(-0.8*MOVE_SPACE), round(0.8*MOVE_SPACE)),
                                  random.randint(round(DEPTH/2), round(DEPTH*3/4)), 0.5, WHITE))
         for enemy in enemies:
-            hittest(player1, enemy)
-            hittest(player2, enemy)
+            hit_test(player1, enemy)
+            hit_test(player2, enemy)
             for bullet in bullets:
-                hittest(enemy, bullet)
+                hit_test(enemy, bullet)
             if enemy.dead:
                 enemies.remove(enemy)
             else:
